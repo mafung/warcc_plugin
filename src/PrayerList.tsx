@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Swiper, SwiperSlide } from 'swiper/react';
-import 'swiper/css';
-import 'swiper/css/navigation';
-import 'swiper/css/pagination';
+import 'swiper/swiper-bundle.css';
 import { Navigation, Pagination } from 'swiper/modules';
 import prayIcon from '../src/assets/pray.png';
+import logo from '../src/assets/logo.jpg';
+import userIcon from '../src/assets/user.svg';
 
 
 interface PrayerItem {
@@ -17,22 +17,33 @@ interface PrayerItem {
   prayCount: number;
   date: string;
   images: string[];
+  status: string;
 }
 
 interface PrayListProps {
   prayers: PrayerItem[];
   incrementPrayCount: (id: number) => void;
+  setPrayers: (prayers: PrayerItem[]) => void;
+  openRequestModal: () => void;
 }
 
-function PrayList({ prayers, incrementPrayCount }: PrayListProps) {
+function PrayList({ prayers, incrementPrayCount, setPrayers, openRequestModal }: PrayListProps) {
   const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [tempSearch, setTempSearch] = useState('');
   const [bounceClasses, setBounceClasses] = useState<Record<number, string>>({});
 
   const categories = Array.from(new Set(prayers.flatMap(p => p.category)));
-  const filteredPrayers = selectedCategory ? prayers.filter(p => p.category.includes(selectedCategory)) : prayers;
+  const filteredPrayers = prayers.filter(p => {
+    if (selectedCategory && !p.category.includes(selectedCategory)) {
+      return false;
+    }
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      return p.title.toLowerCase().includes(query) || p.description.toLowerCase().includes(query);
+    }
+    return true;
+  });
 
   const getCategoryClasses = (category: string | null, isSelected: boolean) => {
     if (category === null) {
@@ -84,18 +95,20 @@ function PrayList({ prayers, incrementPrayCount }: PrayListProps) {
             template header
           </div>
             <div className="w-30">
-              <img src="/src/assets/logo.jpg" className="mix-blend-multiply"/>
+              <img src={logo} className="mix-blend-multiply" />
             </div>
-            
+
             <div className="flex items-center text-gray-500 text-xl">
-              關於我們 | 我們的服務 | 支持我們 | 聯絡我們 |  <span className='text-yellow-900 pl-2'>代禱作戰室</span> | 登入 <img src="/src/assets/user.svg" className="w-7"/>
+              關於我們 | 我們的服務 | 支持我們 | 聯絡我們 |  <span className='text-yellow-900 pl-2'>代禱作戰室</span> | 登入  <img src={userIcon} className="w-7" />
             </div>
             
           </div>
           
         </div>
 
-      <div className="max-w-6xl mx-auto mb-12">
+      <div
+        className="max-w-6xl mx-auto mb-12"
+      >
         <div className="flex items-start mb-12">
           <div className="flex-1"></div>
           <div className="text-right">
@@ -106,7 +119,12 @@ function PrayList({ prayers, incrementPrayCount }: PrayListProps) {
         </div>
 
         <div className="flex justify-between mb-8">
-        <button className="px-4 py-2 sm:px-4 sm:py-2 text-base font-medium bg-indigo-500 text-white rounded-xl hover:bg-indigo-600 active:bg-indigo-700 transition-all duration-200 shadow-lg">
+        <button
+          onClick={() => {
+            openRequestModal();
+          }}
+          className="px-4 py-2 sm:px-4 sm:py-2 text-base font-medium bg-indigo-500 text-white rounded-xl hover:bg-indigo-600 active:bg-indigo-700 transition-all duration-200 shadow-lg"
+        >
             + 發出代禱事項 +
           </button>
           <input
@@ -137,7 +155,7 @@ function PrayList({ prayers, incrementPrayCount }: PrayListProps) {
         </div>
 
         {searchQuery && filteredPrayers.length === 0 && (
-          <p className="text-center text-gray-500 mb-8">找不到</p>
+          <p className="text-center text-gray-500 mb-8">找不到符合條件的禱告事項</p>
         )}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredPrayers.map((prayer) => (

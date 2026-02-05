@@ -1,13 +1,14 @@
 import { useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Swiper, SwiperSlide } from 'swiper/react';
-import 'swiper/css';
-import 'swiper/css/navigation';
-import 'swiper/css/pagination';
+import 'swiper/swiper-bundle.css';
 import { Navigation, Pagination } from 'swiper/modules';
 import prayIcon from '../src/assets/pray.png';
 import voiceIcon from '../src/assets/voice.png';
 import photoIcon from '../src/assets/photo.png';
+import logo from '../src/assets/logo.jpg';
+import userIcon from '../src/assets/user.svg';
+
 
 interface PrayerItem {
   id: number;
@@ -34,10 +35,9 @@ interface Comment {
 interface PrayerDetailProps {
   prayers: PrayerItem[];
   incrementPrayCount: (id: number) => void;
-  incrementCommentPrayCount?: (commentId: number) => void;
 }
 
-function PrayerDetail({ prayers, incrementPrayCount, incrementCommentPrayCount }: PrayerDetailProps) {
+function PrayerDetail({ prayers, incrementPrayCount }: PrayerDetailProps) {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const prayer = prayers.find(p => p.id === parseInt(id || '0'));
@@ -73,10 +73,8 @@ function PrayerDetail({ prayers, incrementPrayCount, incrementCommentPrayCount }
   const [mainIsRecording, setMainIsRecording] = useState(false);
   const [mainMediaRecorder, setMainMediaRecorder] = useState<MediaRecorder | null>(null);
   const [bounceClass, setBounceClass] = useState('');
-  const [commentBounceClasses, setCommentBounceClasses] = useState<Record<number, string>>({});
   const [bouncingCommentIcons, setBouncingCommentIcons] = useState<Set<number>>(new Set());
   const mainImageInputRef = useRef<HTMLInputElement>(null);
-  const replyImageInputRef = useRef<HTMLInputElement>(null);
 
   if (!prayer) {
     return (
@@ -513,12 +511,12 @@ function PrayerDetail({ prayers, incrementPrayCount, incrementCommentPrayCount }
             <div className="mix-blend-multiply absolute inset-0 bg-red-200 bg-opacity-10 flex items-center justify-center text-white text-2xl font-bold">
             template header
           </div>
-            <div className="w-30">
-              <img src="/src/assets/logo.jpg" className="mix-blend-multiply"/>
+             <div className="w-30">
+              <img src={logo} className="mix-blend-multiply" />
             </div>
 
             <div className="flex items-center text-gray-500 text-xl">
-              關於我們 | 我們的服務 | 支持我們 | 聯絡我們 |  <span className='text-yellow-900 pl-2'>代禱作戰室</span> |  登入 <img src="/src/assets/user.svg" className="w-7"/>
+              關於我們 | 我們的服務 | 支持我們 | 聯絡我們 |  <span className='text-yellow-900 pl-2'>代禱作戰室</span> | 登入  <img src={userIcon} className="w-7" />
             </div>
 
           </div>
