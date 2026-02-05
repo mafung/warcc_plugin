@@ -6,32 +6,23 @@ import { Navigation, Pagination } from 'swiper/modules';
 import prayIcon from '../src/assets/pray.png';
 import logo from '../src/assets/logo.jpg';
 import userIcon from '../src/assets/user.svg';
-
-
-interface PrayerItem {
-  id: number;
-  title: string;
-  category: string[];
-  description: string;
-  userName: string;
-  prayCount: number;
-  date: string;
-  images: string[];
-  status: string;
-}
+import ShareModal from './ShareModal';
+import type { PrayerItem } from './types';
 
 interface PrayListProps {
   prayers: PrayerItem[];
   incrementPrayCount: (id: number) => void;
   setPrayers: (prayers: PrayerItem[]) => void;
   openRequestModal: () => void;
+  currentUser: string;
 }
 
-function PrayList({ prayers, incrementPrayCount, setPrayers, openRequestModal }: PrayListProps) {
-  const navigate = useNavigate();
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [bounceClasses, setBounceClasses] = useState<Record<number, string>>({});
+function PrayList({ prayers, incrementPrayCount, setPrayers, openRequestModal, currentUser }: PrayListProps) {
+   const navigate = useNavigate();
+   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+   const [searchQuery, setSearchQuery] = useState('');
+   const [bounceClasses, setBounceClasses] = useState<Record<number, string>>({});
+   const [sharePrayer, setSharePrayer] = useState<PrayerItem | null>(null);
 
   const categories = Array.from(new Set(prayers.flatMap(p => p.category)));
   const filteredPrayers = prayers.filter(p => {
@@ -40,7 +31,10 @@ function PrayList({ prayers, incrementPrayCount, setPrayers, openRequestModal }:
     }
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      return p.title.toLowerCase().includes(query) || p.description.toLowerCase().includes(query);
+      return p.title.toLowerCase().includes(query) ||
+             p.description.toLowerCase().includes(query) ||
+             p.userName.toLowerCase().includes(query) ||
+             p.date.includes(query);
     }
     return true;
   });
@@ -161,8 +155,18 @@ function PrayList({ prayers, incrementPrayCount, setPrayers, openRequestModal }:
           {filteredPrayers.map((prayer) => (
             <div
               key={prayer.id}
-              className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-200 p-4 border-2 border-gray-100 hover:border-indigo-200"
+              className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-200 p-4 border-2 border-gray-100 hover:border-indigo-200 relative"
             >
+              {/* Status Ribbon */}
+              {prayer.status === 'pending' && (
+                <div className="absolute top-0 right-0 z-10">
+                  <div className="relative w-32 h-6 bg-gradient-to-r from-amber-400 to-amber-500 
+                              text-amber-900 text-xs font-bold flex items-center justify-center shadow-lg 
+                              rotate-[45deg] origin-top-left -translate-y-4 translate-x-6 -mr-8">
+                管理員審閱中
+              </div>
+                </div>
+              )}
               <div className="mb-4">
                 <Swiper
                   modules={[Navigation, Pagination]}
@@ -208,41 +212,71 @@ function PrayList({ prayers, incrementPrayCount, setPrayers, openRequestModal }:
               </div>
 
               <h3
-                onClick={() => navigate(`/prayer/${prayer.id}`)}
-                className="font-bold text-lg text-gray-900 mb-2 line-clamp-2 hover:text-indigo-600 transition-colors cursor-pointer"
-              >
-                {prayer.title}
-              </h3>
-              <p className="text-sm text-gray-600 mb-3 line-clamp-2">{prayer.description}</p>
-              <p className="text-xs text-gray-400 mb-2">{prayer.userName} - {prayer.date}</p>
-              <div className="flex justify-end">
-                <div className="flex items-center">
-                 <span className="flex items-center gap-2 text-black pr-2">
-                  <img src={prayIcon} className={`w-7 h-7 -translate-x-[-5px] transition-transform duration-1000 ${bounceClasses[prayer.id] || ''}`} alt="禱告" />
-                  <span className="font-bold text-sm text-gray-500">{prayer.prayCount}</span>
-                 </span>
-                  <button
-                    onClick={() => {
-                      incrementPrayCount(prayer.id);
-                      setBounceClasses(prev => ({ ...prev, [prayer.id]: 'scale-180' }));
-                      setTimeout(() => setBounceClasses(prev => ({ ...prev, [prayer.id]: '' })), 280);
-                    }}
-                    className="w-20 h-8 p-0 text-sm font-semibold rounded-lg flex items-center justify-center transition-all duration-200 bg-indigo-500 text-white hover:bg-indigo-600 shadow-md"
-                    title="Increment pray count"
-                  >
-                    為您禱告
-                  </button>
-                  
-                </div>
-              </div>
-            </div>
+                  onClick={() => navigate(`/prayer/${prayer.id}`)}
+                  className="font-bold text-lg text-gray-900 mb-2 line-clamp-2 hover:text-indigo-600 transition-colors cursor-pointer"
+                >
+                  {prayer.title}
+                </h3>
+                <p className="text-sm text-gray-600 mb-3 line-clamp-2">{prayer.description}</p>
+                <p className="text-xs text-gray-400 mb-2">{prayer.userName} - {prayer.date}</p>
+               
+               {/* Share Button for non-pending items and only on user's own posts */}
+                 {prayer.status !== 'pending' && prayer.userName === currentUser && (
+                   <button
+                     onClick={() => setSharePrayer(prayer)}
+                     className="absolute bottom-4 left-4 flex items-center gap-2 px-3 py-1.5 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors shadow-md text-sm"
+                   >
+                     <svg
+                       className="w-4 h-4"
+                       fill="none"
+                       stroke="currentColor"
+                       viewBox="0 0 24 24"
+                     >
+                       <path
+                         strokeLinecap="round"
+                         strokeLinejoin="round"
+                         strokeWidth={2}
+                         d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
+                       />
+                     </svg>
+                     分享
+                   </button>
+                 )}
+               
+               <div className="flex justify-end">
+                 <div className="flex items-center">
+                  <span className="flex items-center gap-2 text-black pr-2">
+                   <img src={prayIcon} className={`w-7 h-7 -translate-x-[-5px] transition-transform duration-1000 ${bounceClasses[prayer.id] || ''}`} alt="禱告" />
+                   <span className="font-bold text-sm text-gray-500">{prayer.prayCount}</span>
+                  </span>
+                   <button
+                     onClick={() => {
+                       incrementPrayCount(prayer.id);
+                       setBounceClasses(prev => ({ ...prev, [prayer.id]: 'scale-180' }));
+                       setTimeout(() => setBounceClasses(prev => ({ ...prev, [prayer.id]: '' })), 280);
+                     }}
+                     className="w-20 h-8 p-0 text-sm font-semibold rounded-lg flex items-center justify-center transition-all duration-200 bg-indigo-500 text-white hover:bg-indigo-600 shadow-md"
+                     title="Increment pray count"
+                   >
+                     為您禱告
+                   </button>
+                   
+                 </div>
+               </div>
+             </div>
           ))}
         </div>
       </div>
-    </div>
-    </>
-  );
-}
+      </div>
+       <ShareModal
+         isOpen={!!sharePrayer}
+         onClose={() => setSharePrayer(null)}
+         prayerTitle={sharePrayer?.title || ''}
+         prayerId={sharePrayer?.id}
+       />
+     </>
+   );
+ }
 
 export default PrayList;
 

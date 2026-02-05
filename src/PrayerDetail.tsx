@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import 'swiper/swiper-bundle.css';
@@ -8,6 +8,7 @@ import voiceIcon from '../src/assets/voice.png';
 import photoIcon from '../src/assets/photo.png';
 import logo from '../src/assets/logo.jpg';
 import userIcon from '../src/assets/user.svg';
+import ShareModal from './ShareModal';
 
 
 interface PrayerItem {
@@ -19,6 +20,7 @@ interface PrayerItem {
   prayCount: number;
   date: string;
   images: string[];
+  status?: 'pending' | 'approved';
 }
 
 interface Comment {
@@ -35,9 +37,11 @@ interface Comment {
 interface PrayerDetailProps {
   prayers: PrayerItem[];
   incrementPrayCount: (id: number) => void;
+  setPrayers: (prayers: PrayerItem[]) => void;
+  currentUser: string;
 }
 
-function PrayerDetail({ prayers, incrementPrayCount }: PrayerDetailProps) {
+function PrayerDetail({ prayers, incrementPrayCount, setPrayers, currentUser }: PrayerDetailProps) {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const prayer = prayers.find(p => p.id === parseInt(id || '0'));
@@ -74,7 +78,15 @@ function PrayerDetail({ prayers, incrementPrayCount }: PrayerDetailProps) {
   const [mainMediaRecorder, setMainMediaRecorder] = useState<MediaRecorder | null>(null);
   const [bounceClass, setBounceClass] = useState('');
   const [bouncingCommentIcons, setBouncingCommentIcons] = useState<Set<number>>(new Set());
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const mainImageInputRef = useRef<HTMLInputElement>(null);
+  const [lightboxImage, setLightboxImage] = useState<string>('');
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+
+  // Scroll to top when component mounts
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
   if (!prayer) {
     return (
@@ -194,12 +206,12 @@ function PrayerDetail({ prayers, incrementPrayCount }: PrayerDetailProps) {
           audio: navigator.userAgent.includes('Safari') && !navigator.userAgent.includes('Chrome')
             ? true  // Safari prefers simple boolean
             : {
-                echoCancellation: true,
-                noiseSuppression: true,
-                autoGainControl: true,
-                sampleRate: 44100,
-                channelCount: 1
-              }
+              echoCancellation: true,
+              noiseSuppression: true,
+              autoGainControl: true,
+              sampleRate: 44100,
+              channelCount: 1
+            }
         };
 
         const stream = await navigator.mediaDevices.getUserMedia(constraints);
@@ -318,7 +330,7 @@ function PrayerDetail({ prayers, incrementPrayCount }: PrayerDetailProps) {
   };
 
   const renderComment = (comment: Comment, isReply: boolean = false) => (
-    <div key={comment.id} className={`${isReply ? 'ml-6 mt-3' : ''} border-b border-gray-100 pb-3 last:border-b-0`}>
+    <div key={comment.id} className={`${isReply ? 'ml-6 mt-3' : ''} border-b border-rose-200 pb-3 last:border-b-0`}>
       <div className="flex justify-between items-start mb-2">
         <span className="font-semibold text-gray-900">{comment.userName}</span>
         <span className="text-xs text-gray-500">{comment.date}</span>
@@ -332,7 +344,11 @@ function PrayerDetail({ prayers, incrementPrayCount }: PrayerDetailProps) {
               key={imgIndex}
               src={image}
               alt={`Attachment ${imgIndex + 1}`}
-              className="w-16 h-16 object-cover rounded border"
+              className="w-16 h-16 object-cover rounded border cursor-pointer hover:opacity-80 transition-opacity"
+              onClick={() => {
+                setLightboxImage(image);
+                setIsLightboxOpen(true);
+              }}
             />
           ))}
         </div>
@@ -345,7 +361,7 @@ function PrayerDetail({ prayers, incrementPrayCount }: PrayerDetailProps) {
       )}
       <div className="flex items-center justify-between">
         <button
-          className="text-base text-gray-500 hover:text-gray-700 transition-colors"
+          className="text-base text-rose-400 hover:text-rose-700 transition-colors"
           onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)}
         >
           回覆
@@ -377,7 +393,7 @@ function PrayerDetail({ prayers, incrementPrayCount }: PrayerDetailProps) {
             value={newReply}
             onChange={(e) => setNewReply(e.target.value)}
             placeholder="留下您的回覆..."
-            className="w-82 p-2 m-1 text-gray-700 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none sm:w-77"
+            className="w-82 p-2 m-1 bg-white text-rose-400 border border-rose-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent resize-none sm:w-77"
             rows={2}
           />
 
@@ -389,7 +405,11 @@ function PrayerDetail({ prayers, incrementPrayCount }: PrayerDetailProps) {
                   <img
                     src={URL.createObjectURL(file)}
                     alt={`Attachment ${index + 1}`}
-                    className="w-16 h-16 object-cover rounded border"
+                    className="w-16 h-16 object-cover rounded border cursor-pointer hover:opacity-80 transition-opacity"
+                    onClick={() => {
+                      setLightboxImage(URL.createObjectURL(file));
+                      setIsLightboxOpen(true);
+                    }}
                   />
                   <button
                     onClick={() => removeImage(index)}
@@ -446,11 +466,10 @@ function PrayerDetail({ prayers, incrementPrayCount }: PrayerDetailProps) {
             <button
               type="button"
               onClick={handleVoiceRecord}
-              className={`px-4 py-2 pr-6 text-sm rounded-lg transition-colors flex items-center gap-2 border ${
-                isRecording
+              className={`px-4 py-2 pr-6 text-sm rounded-lg transition-colors flex items-center gap-2 border ${isRecording
                   ? 'bg-red-500 text-white animate-pulse border-red-500'
                   : 'bg-green-100 text-green-700 hover:bg-green-200 border-green-200'
-              }`}
+                }`}
             >
               <img src={voiceIcon} className="w-5 h-5 -scale-x-100 -translate-x-[0px]" alt="語音" />
               {isRecording ? '錄音中...' : '語音錄製'}
@@ -509,213 +528,283 @@ function PrayerDetail({ prayers, incrementPrayCount }: PrayerDetailProps) {
 
           <div className="flex justify-between items-start p-10">
             <div className="mix-blend-multiply absolute inset-0 bg-red-200 bg-opacity-10 flex items-center justify-center text-white text-2xl font-bold">
-            template header
-          </div>
-             <div className="w-30">
+              template header
+            </div>
+            <div className="w-30">
               <img src={logo} className="mix-blend-multiply" />
             </div>
 
-            <div className="flex items-center text-gray-500 text-xl">
-              關於我們 | 我們的服務 | 支持我們 | 聯絡我們 |  <span className='text-yellow-900 pl-2'>代禱作戰室</span> | 登入  <img src={userIcon} className="w-7" />
-            </div>
+            <div className="flex items-center gap-6">
+              <div className="flex items-center text-gray-500 text-xl">
+                關於我們 | 我們的服務 | 支持我們 | 聯絡我們 |  <span className='text-yellow-900 pl-2'>代禱作戰室</span> | 登入  <img src={userIcon} className="w-7" />
+              </div>
 
+
+            </div>
           </div>
 
         </div>
 
         <div className="max-w-6xl mx-auto mb-12">
-        <div className="max-w-7xl mx-auto">
-          {/* Header */}
-          <div className="mb-6">
-            <button
-              onClick={() => navigate('/')}
-              className="flex items-center text-indigo-600 hover:text-indigo-800 transition-colors mb-4"
-            >
-              ← 返回列表
-            </button>
-            <div className="flex justify-between items-start">
-              <div className="flex-1">
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">{prayer.title}</h1>
-                <div className="flex items-center text-gray-600 mb-4">
-                  <span className="mr-4">{prayer.userName}</span>
-                  <span>{prayer.date}</span>
+          <div className="max-w-7xl mx-auto">
+            {/* Header */}
+            <div className="space-y-6">
+              {/* Top: Buttons + Title */}
+              <div className="w-full flex flex-col lg:flex-row lg:items-start lg:gap-6">
+                <div className="flex items-center mb-4 lg:mb-0 lg:flex-1">
+                  <button
+                    onClick={() => navigate('/')}
+                    className="flex items-center text-indigo-600 hover:text-indigo-800 transition-colors mb-4"
+                  >
+                    ← 返回列表
+                  </button>
                 </div>
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {prayer.category.map((cat, index) => (
-                    <span
-                      key={index}
-                      className={`px-3 py-1 rounded-lg text-sm font-semibold ${
-                        cat === '病人醫治' ? 'bg-pink-100 text-pink-800' :
-                        cat === '心理支持' ? 'bg-purple-100 text-purple-800' :
-                        cat === '兒童病患' ? 'bg-green-100 text-green-800' :
-                        cat === '癌症病患' ? 'bg-blue-100 text-blue-800' :
-                        cat === '家庭關係' ? 'bg-red-100 text-red-800' :
-                        cat === '長期照護' ? 'bg-yellow-100 text-yellow-800' :
-                        cat === '癌症患者' ? 'bg-teal-100 text-teal-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}
+                <div className='ml-auto'>
+                  {prayer && prayer.status !== 'pending' && prayer.userName === currentUser && (
+                    <button
+                      onClick={() => setIsShareModalOpen(true)}
+                      className="flex items-center gap-2 px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors shadow-md"
                     >
-                      {cat}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Main Content */}
-            <div className="lg:col-span-2">
-              {/* Image Slider */}
-              <div className="bg-white rounded-xl shadow-md p-2 mb-6 sm:p-4">
-                <Swiper
-                  modules={[Navigation, Pagination]}
-                  spaceBetween={10}
-                  slidesPerView={1}
-                  navigation
-                  pagination={{ clickable: true }}
-                  className="w-full aspect-[16/9] rounded-lg"
-                >
-                  {prayer.images.map((image, index) => (
-                    <SwiperSlide key={index}>
-                      <img
-                        src={image}
-                        alt={`${prayer.title} ${index + 1}`}
-                        className="w-full h-full object-cover rounded-lg"
-                      />
-                    </SwiperSlide>
-                  ))}
-                </Swiper>
-              </div>
-
-              {/* Description */}
-              <div className="bg-white rounded-xl shadow-md p-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-4">禱告內容</h2>
-                <p className="text-gray-700 leading-relaxed">{prayer.description}</p>
-                <div className="flex justify-end items-center mt-4">
-                                <span className="flex items-center gap-2 text-black pr-2">
-                                  <img src={prayIcon} className={`w-7 h-7 -translate-x-[-5px] transition-transform duration-1000 ${bounceClass}`} alt="禱告" />
-                                  <span className="font-bold text-sm text-gray-500">{prayer.prayCount}</span>
-                                </span>
-                                <button
-                                  onClick={() => {
-                                    incrementPrayCount(prayer.id);
-                                    setBounceClass('scale-180');
-                                    setTimeout(() => setBounceClass(''), 280);
-                                  }}
-                                  className="px-6 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-all duration-200 shadow-md"
-                                >
-                                  為您禱告
-                                </button>
-                              </div>
-                </div>
-            </div>
-
-            {/* Comments Sidebar */}
-            <div className="lg:col-span-1">
-              <div className="bg-white rounded-xl shadow-md p-6 sticky top-6">
-                <h3 className="text-lg font-bold text-gray-900 mb-4">代禱留言</h3>
-
-                {/* Comments List */}
-                <div className="space-y-4 mb-6 max-h-96 overflow-y-auto">
-                  {comments.map((comment) => renderComment(comment))}
-                </div>
-
-                {/* Add Comment */}
-                <div className="border-t border-gray-100 pt-4">
-                  <textarea
-                    value={newComment}
-                    onChange={(e) => setNewComment(e.target.value)}
-                    placeholder="留下您的代禱留言..."
-                    className="w-full p-3 text-gray-700 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
-                    rows={3}
-                  />
-
-                  {/* Media Attachments Preview */}
-                  {mainAttachedImages.length > 0 && (
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {mainAttachedImages.map((file, index) => (
-                        <div key={index} className="relative">
-                          <img
-                            src={URL.createObjectURL(file)}
-                            alt={`Attachment ${index + 1}`}
-                            className="w-16 h-16 object-cover rounded border"
-                          />
-                          <button
-                            onClick={() => removeMainImage(index)}
-                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center"
-                          >
-                            ×
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {mainAttachedAudio && (
-                    <div className="mt-2 flex items-center gap-2">
-                      <audio controls src={mainAttachedAudio} className="flex-1" />
-                      <button
-                        onClick={removeMainAudio}
-                        className="bg-red-500 text-white rounded px-2 py-1 text-xs"
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
                       >
-                        移除
-                      </button>
-                    </div>
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
+                        />
+                      </svg>
+                      分享
+                    </button>
                   )}
+                </div>
+              </div>
+              <div className="flex justify-between items-start">
+                <div className="flex-1">
+                  <h1 className="text-3xl font-bold text-gray-900 mb-2">{prayer.title}</h1>
+                  <div className="flex items-center text-gray-600 mb-4">
+                    <span className="mr-4">{prayer.userName}</span>
+                    <span>{prayer.date}</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {prayer.category.map((cat, index) => (
+                      <span
+                        key={index}
+                        className={`px-3 py-1 rounded-lg text-sm font-semibold ${cat === '病人醫治' ? 'bg-pink-100 text-pink-800' :
+                            cat === '心理支持' ? 'bg-purple-100 text-purple-800' :
+                              cat === '兒童病患' ? 'bg-green-100 text-green-800' :
+                                cat === '癌症病患' ? 'bg-blue-100 text-blue-800' :
+                                  cat === '家庭關係' ? 'bg-red-100 text-red-800' :
+                                    cat === '長期照護' ? 'bg-yellow-100 text-yellow-800' :
+                                      cat === '癌症患者' ? 'bg-teal-100 text-teal-800' :
+                                        'bg-gray-100 text-gray-800'
+                          }`}
+                      >
+                        {cat}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
 
-                  {/* Media Attachment Buttons */}
-                  <div className="flex items-center gap-3 mt-3">
-                    <div>
-                      <input
-                        ref={mainImageInputRef}
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        onChange={handleMainImageAttach}
-                        className="hidden"
-                      />
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+               {/* Main Content */}
+               <div className="lg:col-span-2">
+                 {/* Image Slider */}
+                 <div className="relative bg-white rounded-xl shadow-md p-2 mb-6 sm:p-4">
+                   {prayer.status === 'pending' && (
+                     <div className="absolute top-0 right-0 z-10">
+                       <div className="relative w-32 h-6 bg-gradient-to-r from-amber-400 to-amber-500 
+                                   text-amber-900 text-xs font-bold flex items-center justify-center shadow-lg 
+                                   rotate-[45deg] origin-top-left -translate-y-4 translate-x-6 -mr-8">
+                         管理員審閱中
+                       </div>
+                     </div>
+                   )}
+                   <Swiper
+                     modules={[Navigation, Pagination]}
+                     spaceBetween={10}
+                     slidesPerView={1}
+                     navigation
+                     pagination={{ clickable: true }}
+                     className="w-full aspect-[16/9] rounded-lg"
+                   >
+                     {prayer.images.map((image, index) => (
+                       <SwiperSlide key={index}>
+                         <img
+                           src={image}
+                           alt={`${prayer.title} ${index + 1}`}
+                           className="w-full h-full object-cover rounded-lg"
+                         />
+                       </SwiperSlide>
+                     ))}
+                   </Swiper>
+                 </div>
+
+                {/* Description */}
+                <div className="bg-white rounded-xl shadow-md p-6">
+                  <h2 className="text-xl font-bold text-gray-900 mb-4">禱告內容</h2>
+                  <p className="text-gray-700 leading-relaxed">{prayer.description}</p>
+                  <div className="flex justify-end items-center mt-4">
+                    <span className="flex items-center gap-2 text-black pr-2">
+                      <img src={prayIcon} className={`w-7 h-7 -translate-x-[-5px] transition-transform duration-1000 ${bounceClass}`} alt="禱告" />
+                      <span className="font-bold text-sm text-gray-500">{prayer.prayCount}</span>
+                    </span>
+                    <button
+                      onClick={() => {
+                        incrementPrayCount(prayer.id);
+                        setBounceClass('scale-180');
+                        setTimeout(() => setBounceClass(''), 280);
+                      }}
+                      className="px-6 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-all duration-200 shadow-md"
+                    >
+                      為您禱告
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Comments Sidebar */}
+              <div className="lg:col-span-1">
+                <div className="bg-rose-50 rounded-xl shadow-md p-6 sticky top-6">
+                  <h3 className="text-lg font-bold text-gray-900 mb-4">代禱留言</h3>
+
+                  {/* Comments List */}
+                  <div className="space-y-4 mb-6 max-h-96 overflow-y-auto">
+                    {comments.map((comment) => renderComment(comment))}
+                  </div>
+
+                  {/* Add Comment */}
+                  <div className="border-t border-gray-100 pt-4">
+                    <textarea
+                      value={newComment}
+                      onChange={(e) => setNewComment(e.target.value)}
+                      placeholder="留下您的代禱留言..."
+                      className="w-full bg-white p-3 text-gray-700 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
+                      rows={3}
+                    />
+
+                    {/* Media Attachments Preview */}
+                    {mainAttachedImages.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {mainAttachedImages.map((file, index) => (
+                          <div key={index} className="relative">
+                            <img
+                              src={URL.createObjectURL(file)}
+                              alt={`Attachment ${index + 1}`}
+                              className="w-16 h-16 object-cover rounded border cursor-pointer hover:opacity-80 transition-opacity"
+                              onClick={() => {
+                                setLightboxImage(URL.createObjectURL(file));
+                                setIsLightboxOpen(true);
+                              }}
+                            />
+                            <button
+                              onClick={() => removeMainImage(index)}
+                              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {mainAttachedAudio && (
+                      <div className="mt-2 flex items-center gap-2">
+                        <audio controls src={mainAttachedAudio} className="flex-1" />
+                        <button
+                          onClick={removeMainAudio}
+                          className="bg-red-500 text-white rounded px-2 py-1 text-xs"
+                        >
+                          移除
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Media Attachment Buttons */}
+                    <div className="flex items-center gap-3 mt-3">
+                      <div>
+                        <input
+                          ref={mainImageInputRef}
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          onChange={handleMainImageAttach}
+                          className="hidden"
+                        />
+                        <button
+                          type="button"
+                          className="px-5 pr-2 py-2 text-sm bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors flex items-center gap-2 border border-blue-200"
+                          onClick={() => mainImageInputRef.current?.click()}
+                        >
+                          <span className="flex items-center gap-2 text-black pr-2">
+                            <img src={photoIcon} className="w-5 h-5 -scale-x-100 -translate-x-[0px]" alt="附加圖片" />
+                            <span className="text-sm text-gray-600 mr-2">附加圖片</span>
+                          </span>
+                        </button>
+                      </div>
+
                       <button
                         type="button"
-                        className="px-5 pr-2 py-2 text-sm bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors flex items-center gap-2 border border-blue-200"
-                        onClick={() => mainImageInputRef.current?.click()}
+                        onClick={handleMainVoiceRecord}
+                        className={`px-4 pr-6 py-2 text-sm rounded-lg transition-colors flex items-center gap-2 border ${mainIsRecording
+                            ? 'bg-red-500 text-white animate-pulse border-red-500'
+                            : 'bg-green-100 text-green-700 hover:bg-green-200 border-green-200'
+                          }`}
                       >
-                        <span className="flex items-center gap-2 text-black pr-2">
-                          <img src={photoIcon} className="w-5 h-5 -scale-x-100 -translate-x-[0px]" alt="附加圖片" />
-                          <span className="text-sm text-gray-600 mr-2">附加圖片</span>
-                        </span>
+                        <span className="flex items-center gap-2 text-black pr-0">
+                          <img src={voiceIcon} className="w-5 h-5 -scale-x-100 -translate-x-[0px]" alt="語音" />
+                        </span> {mainIsRecording ? '錄音中...' : '語音錄製'}
                       </button>
                     </div>
 
                     <button
-                      type="button"
-                      onClick={handleMainVoiceRecord}
-                      className={`px-4 pr-6 py-2 text-sm rounded-lg transition-colors flex items-center gap-2 border ${
-                        mainIsRecording
-                          ? 'bg-red-500 text-white animate-pulse border-red-500'
-                          : 'bg-green-100 text-green-700 hover:bg-green-200 border-green-200'
-                      }`}
+                      onClick={handleAddComment}
+                      disabled={!newComment.trim() && mainAttachedImages.length === 0 && !mainAttachedAudio}
+                      className="w-full mt-3 px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 disabled:bg-indigo-200 disabled:cursor-not-allowed transition-all duration-200"
                     >
-                      <span className="flex items-center gap-2 text-black pr-0">
-                  <img src={voiceIcon} className="w-5 h-5 -scale-x-100 -translate-x-[0px]" alt="語音" />
-                  </span> {mainIsRecording ? '錄音中...' : '語音錄製'}
+                      送出留言
                     </button>
                   </div>
-
-                  <button
-                    onClick={handleAddComment}
-                    disabled={!newComment.trim() && mainAttachedImages.length === 0 && !mainAttachedAudio}
-                    className="w-full mt-3 px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all duration-200"
-                  >
-                    送出留言
-                  </button>
                 </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-      </div>
+
+      <ShareModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        prayerTitle={prayer.title}
+      />
+
+      {/* Lightbox Modal */}
+      {isLightboxOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80"
+          onClick={() => setIsLightboxOpen(false)}
+        >
+          <div className="relative max-w-4xl max-h-[90vh] p-4">
+            <button
+              className="absolute -top-12 right-0 text-white text-3xl hover:text-gray-300 transition-colors"
+              onClick={() => setIsLightboxOpen(false)}
+            >
+              ×
+            </button>
+            <img
+              src={lightboxImage}
+              alt="Lightbox image"
+              className="max-w-full max-h-[85vh] object-contain rounded-lg"
+            />
+          </div>
+        </div>
+      )}
     </>
   );
 }

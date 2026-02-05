@@ -2,18 +2,13 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import logo from '../src/assets/logo.jpg';
 import userIcon from '../src/assets/user.svg';
-
-interface PrayerItem {
-  id: number;
-  title: string;
-  category: string[];
-  description: string;
-  userName: string;
-  prayCount: number;
-  date: string;
-  images: string[];
-  status: string;
-}
+import defaultImage from '../src/assets/default.jpg';
+import coverPatient from '../src/assets/cover_patient.jpg';
+import coverKid from '../src/assets/cover_kid.jpg';
+import coverCancer from '../src/assets/cover_cancer.jpg';
+import coverFamily from '../src/assets/cover_family.jpg';
+import coverCare from '../src/assets/cover_care.jpg';
+import type { PrayerItem as PrayerItemType } from './types';
 
 const categories = [
   '病人醫治',
@@ -24,13 +19,24 @@ const categories = [
   '長期照護'
 ];
 
+// Category to default image mapping
+const categoryToImage: Record<string, string> = {
+  '病人醫治': coverPatient,
+  '心理支持': defaultImage,
+  '兒童病患': coverKid,
+  '癌症病患': coverCancer,
+  '家庭關係': coverFamily,
+  '長期照護': coverCare
+};
+
 interface PrayerRequestModalProps {
-  prayers: PrayerItem[];
-  setPrayers: (prayers: PrayerItem[]) => void;
+  prayers: PrayerItemType[];
+  setPrayers: (prayers: PrayerItemType[]) => void;
   onClose: () => void;
+  currentUser: string;
 }
 
-function PrayerRequestModal({ prayers, setPrayers, onClose }: PrayerRequestModalProps) {
+function PrayerRequestModal({ prayers, setPrayers, onClose, currentUser }: PrayerRequestModalProps) {
   const navigate = useNavigate();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -79,25 +85,27 @@ function PrayerRequestModal({ prayers, setPrayers, onClose }: PrayerRequestModal
   };
 
   const handleConfirm = () => {
-    // Convert image files to URLs
-    const imageUrls = imageFiles.map(file => URL.createObjectURL(file));
+      // Convert image files to URLs, or use category-specific default image if no images uploaded
+      const imageUrls = imageFiles.length > 0
+        ? imageFiles.map(file => URL.createObjectURL(file))
+        : [selectedCategories.length > 0 ? categoryToImage[selectedCategories[0]] : defaultImage];
 
-    const newPrayer: PrayerItem = {
-      id: Date.now(),
-      title: title.trim(),
-      category: selectedCategories,
-      description: description.trim(),
-      userName: '我',
-      prayCount: 0,
-      date: new Date().toISOString().split('T')[0],
-      images: imageUrls,
-      status: 'pending'
+      const newPrayer: PrayerItemType = {
+        id: Date.now(),
+        title: title.trim(),
+        category: selectedCategories,
+        description: description.trim(),
+        userName: currentUser,
+        prayCount: 0,
+        date: new Date().toISOString().split('T')[0],
+        images: imageUrls,
+        status: 'pending'
+      };
+
+      setPrayers([newPrayer, ...prayers]);
+      setIsPreview(false);
+      onClose();
     };
-
-    setPrayers([newPrayer, ...prayers]);
-    setIsPreview(false);
-    onClose();
-  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -125,13 +133,7 @@ function PrayerRequestModal({ prayers, setPrayers, onClose }: PrayerRequestModal
             </svg>
           </button>
           
-          {/* Pending Ribbon Label */}
-          <div className="absolute top-4 right-4">
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-amber-100 text-amber-800 border-2 border-amber-300">
-              <span className="w-2 h-2 bg-amber-500 rounded-full mr-2 animate-pulse"></span>
-              pending
-            </span>
-          </div>
+         
         </div>
 
         {/* Form */}

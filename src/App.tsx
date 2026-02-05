@@ -3,18 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import PrayList from './PrayerList';
 import PrayerDetail from './PrayerDetail';
 import PrayerRequestModal from './PrayerRequestModal';
-
-interface PrayerItem {
-  id: number;
-  title: string;
-  category: string[];
-  description: string;
-  userName: string;
-  prayCount: number;
-  date: string;
-  images: string[];
-  status: string;
-}
+import type { PrayerItem } from './types';
 
 const samplePrayers: PrayerItem[] = [
   {
@@ -33,7 +22,7 @@ const samplePrayers: PrayerItem[] = [
     title: "弟弟慢性病治療",
     category: ["心理支持"],
     description: "為弟弟長期的治療過程禱告，求主堅固他的信心與心靈。",
-    userName: "林先生",
+    userName: "陳太",
     prayCount: 8,
     date: "2026-02-01",
     images: ["https://images.unsplash.com/photo-1438232992991-995b7058bbb3?w=400&h=300&fit=crop", "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=400&h=300&fit=crop", "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=400&h=300&fit=crop"],
@@ -44,7 +33,7 @@ const samplePrayers: PrayerItem[] = [
     title: "孩子康復進展",
     category: ["家庭關係"],
     description: "孩子住院已一週，求主帶領治療順利，早日出院。",
-    userName: "李太",
+    userName: "陳太",
     prayCount: 3,
     date: "2026-02-02",
     images: ["https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=400&h=300&fit=crop", "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=400&h=300&fit=crop"],
@@ -99,12 +88,17 @@ const samplePrayers: PrayerItem[] = [
 function App() {
   const [prayers, setPrayers] = useState(samplePrayers);
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState<string>('陳太');
 
   const incrementPrayCount = (id: number) => {
-    setPrayers(prayers.map(item =>
-      item.id === id ? { ...item, prayCount: item.prayCount + 1 } : item
-    ));
-  };
+     setPrayers(prayers.map(item =>
+       item.id === id ? { ...item, prayCount: item.prayCount + 1 } : item
+     ));
+   };
+
+   const handleSetPrayers = (newPrayers: PrayerItem[]) => {
+     setPrayers(newPrayers);
+   };
 
   const openRequestModal = () => {
     setIsRequestModalOpen(true);
@@ -132,14 +126,15 @@ function App() {
     /*<Router basename="/warcc">*/
     <Router>
       <Routes>
-        <Route path="/" element={<PrayList prayers={prayers} incrementPrayCount={incrementPrayCount} setPrayers={setPrayers} openRequestModal={openRequestModal} />} />
-        <Route path="/prayer/:id" element={<PrayerDetail prayers={prayers} incrementPrayCount={incrementPrayCount} />} />
-      </Routes>
+         <Route path="/" element={<PrayList prayers={prayers} incrementPrayCount={incrementPrayCount} setPrayers={setPrayers} openRequestModal={openRequestModal} currentUser={currentUser} />} />
+         <Route path="/prayer/:id" element={<PrayerDetail prayers={prayers} incrementPrayCount={incrementPrayCount} setPrayers={setPrayers} currentUser={currentUser} />} />
+       </Routes>
       {isRequestModalOpen && (
         <PrayerRequestModal
           prayers={prayers}
           setPrayers={setPrayers}
           onClose={closeRequestModal}
+          currentUser={currentUser}
         />
       )}
     </Router>
