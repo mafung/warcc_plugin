@@ -7,7 +7,7 @@ interface ShareModalProps {
   prayerId?: number;
 }
 
-function ShareModal({ isOpen, onClose, prayerTitle, prayerId }: ShareModalProps) {
+function ShareModal({ isOpen, onClose, prayerId }: ShareModalProps) {
   const [copied, setCopied] = useState(false);
 
   const handleCopyLink = async () => {

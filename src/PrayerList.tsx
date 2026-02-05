@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import 'swiper/swiper-bundle.css';
@@ -17,7 +17,7 @@ interface PrayListProps {
   currentUser: string;
 }
 
-function PrayList({ prayers, incrementPrayCount, setPrayers, openRequestModal, currentUser }: PrayListProps) {
+function PrayList({ prayers, incrementPrayCount, openRequestModal, currentUser }: PrayListProps) {
    const navigate = useNavigate();
    const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
    const [searchQuery, setSearchQuery] = useState('');

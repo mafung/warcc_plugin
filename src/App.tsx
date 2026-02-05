@@ -88,16 +88,12 @@ const samplePrayers: PrayerItem[] = [
 function App() {
   const [prayers, setPrayers] = useState(samplePrayers);
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
-  const [currentUser, setCurrentUser] = useState<string>('陳太');
+  const [currentUser] = useState<string>('陳太');
 
   const incrementPrayCount = (id: number) => {
      setPrayers(prayers.map(item =>
        item.id === id ? { ...item, prayCount: item.prayCount + 1 } : item
      ));
-   };
-
-   const handleSetPrayers = (newPrayers: PrayerItem[]) => {
-     setPrayers(newPrayers);
    };
 
   const openRequestModal = () => {
@@ -123,20 +119,20 @@ function App() {
   }, [isRequestModalOpen]);
 
   return (
-    /*<Router basename="/warcc">*/
+    /* <Router basename="/warcc"> */
     <Router>
       <Routes>
          <Route path="/" element={<PrayList prayers={prayers} incrementPrayCount={incrementPrayCount} setPrayers={setPrayers} openRequestModal={openRequestModal} currentUser={currentUser} />} />
          <Route path="/prayer/:id" element={<PrayerDetail prayers={prayers} incrementPrayCount={incrementPrayCount} setPrayers={setPrayers} currentUser={currentUser} />} />
-       </Routes>
-      {isRequestModalOpen && (
-        <PrayerRequestModal
-          prayers={prayers}
-          setPrayers={setPrayers}
-          onClose={closeRequestModal}
-          currentUser={currentUser}
-        />
-      )}
+        </Routes>
+        {isRequestModalOpen && (
+          <PrayerRequestModal
+            prayers={prayers}
+            setPrayers={setPrayers}
+            onClose={closeRequestModal}
+            currentUser={currentUser}
+          />
+        )}
     </Router>
   );
 }

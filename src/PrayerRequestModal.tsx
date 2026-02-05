@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import logo from '../src/assets/logo.jpg';
-import userIcon from '../src/assets/user.svg';
+//import { useNavigate } from 'react-router-dom';
+//import logo from '../src/assets/logo.jpg';
+//import userIcon from '../src/assets/user.svg';
 import defaultImage from '../src/assets/default.jpg';
 import coverPatient from '../src/assets/cover_patient.jpg';
 import coverKid from '../src/assets/cover_kid.jpg';
@@ -37,7 +37,7 @@ interface PrayerRequestModalProps {
 }
 
 function PrayerRequestModal({ prayers, setPrayers, onClose, currentUser }: PrayerRequestModalProps) {
-  const navigate = useNavigate();
+  //const navigate = useNavigate();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);

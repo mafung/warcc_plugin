@@ -41,7 +41,7 @@ interface PrayerDetailProps {
   currentUser: string;
 }
 
-function PrayerDetail({ prayers, incrementPrayCount, setPrayers, currentUser }: PrayerDetailProps) {
+function PrayerDetail({ prayers, incrementPrayCount, currentUser }: PrayerDetailProps) {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const prayer = prayers.find(p => p.id === parseInt(id || '0'));
