@@ -1,5 +1,12 @@
 import { useState } from 'react';
 
+// Helper function to handle both click and touch events
+const handleTouch = (callback: (e?: React.MouseEvent | React.TouchEvent) => void) => (e: React.MouseEvent | React.TouchEvent) => {
+  e.preventDefault();
+  e.stopPropagation();
+  callback(e);
+};
+
 interface ShareModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -11,9 +18,8 @@ function ShareModal({ isOpen, onClose, prayerId }: ShareModalProps) {
   const [copied, setCopied] = useState(false);
 
   const handleCopyLink = async () => {
-    // Construct the prayer detail URL
-    const baseUrl = window.location.origin + window.location.pathname.replace(/\/$/, '');
-    const url = prayerId ? `${baseUrl}/prayer/${prayerId}` : window.location.href;
+    // Share the current page URL
+    const url = window.location.href;
     try {
       await navigator.clipboard.writeText(url);
       setCopied(true);
@@ -24,8 +30,11 @@ function ShareModal({ isOpen, onClose, prayerId }: ShareModalProps) {
   };
 
   const getShareUrl = () => {
-    const baseUrl = window.location.origin + window.location.pathname.replace(/\/$/, '');
-    return prayerId ? `${baseUrl}/prayer/${prayerId}` : window.location.href;
+    const baseUrl = window.location.href.split('?')[0];
+    if (prayerId) {
+      return `${baseUrl}?id=${prayerId}`;
+    }
+    return baseUrl;
   };
 
   if (!isOpen) return null;
@@ -44,8 +53,8 @@ function ShareModal({ isOpen, onClose, prayerId }: ShareModalProps) {
         <div className="flex justify-between items-center p-6 border-b border-gray-100">
           <h3 className="text-xl font-bold text-gray-900">分享禱告事項</h3>
           <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            onClick={handleTouch(onClose)}
+            className="text-gray-400 hover:text-gray-600 transition-colors active:scale-95"
           >
             <svg
               className="w-6 h-6"
@@ -78,8 +87,8 @@ function ShareModal({ isOpen, onClose, prayerId }: ShareModalProps) {
               className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
             />
             <button
-              onClick={handleCopyLink}
-              className={`px-4 py-3 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-colors flex items-center gap-2 ${
+              onClick={handleTouch(handleCopyLink)}
+              className={`px-4 py-3 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-colors flex items-center gap-2 active:scale-95 ${
                 copied ? 'bg-green-500 hover:bg-green-600' : ''
               }`}
             >

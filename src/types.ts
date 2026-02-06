@@ -1,12 +1,13 @@
 export interface PrayerItem {
   id: number;
-  title: string;
+  title?: string;
   category: string[];
   description: string;
   userName: string;
   prayCount: number;
   date: string;
   images: string[];
+  comments: Comment[];
   status?: 'pending' | 'approved';
 }
 

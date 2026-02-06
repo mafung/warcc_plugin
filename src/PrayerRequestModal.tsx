@@ -44,6 +44,7 @@ function PrayerRequestModal({ prayers, setPrayers, onClose, currentUser }: Praye
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [isPreview, setIsPreview] = useState(false);
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
 
   const handleCategoryToggle = (category: string) => {
     setSelectedCategories(prev =>
@@ -99,11 +100,13 @@ function PrayerRequestModal({ prayers, setPrayers, onClose, currentUser }: Praye
         prayCount: 0,
         date: new Date().toISOString().split('T')[0],
         images: imageUrls,
+        comments: [],
         status: 'pending'
       };
 
       setPrayers([newPrayer, ...prayers]);
       setIsPreview(false);
+      setShowSuccessMessage(true);
       onClose();
     };
 
@@ -140,26 +143,12 @@ function PrayerRequestModal({ prayers, setPrayers, onClose, currentUser }: Praye
         <div className="flex-1 overflow-y-auto p-6">
           {!isPreview ? (
             <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Title */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                標題 <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="請輸入禱告事項標題"
-                className="w-full px-4 py-3 border text-gray-700 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                required
-              />
-            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-15">
               {/* Description */}
               <div className="w-full mb-5 md:mb-0">
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  描述 <span className="text-red-500">*</span>
+                  代禱內容 <span className="text-red-500">*</span>
                 </label>
                 <textarea
                   value={description}
@@ -273,6 +262,30 @@ function PrayerRequestModal({ prayers, setPrayers, onClose, currentUser }: Praye
             </div>
           </form>
           ) : (
+            // Success Message View
+            showSuccessMessage ? (
+              <div className="space-y-6">
+                <div className="text-center py-8">
+                  <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+                    <svg className="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <h3 className="text-2xl font-bold text-gray-800 mb-2">發佈成功</h3>
+                  <p className="text-gray-600">你的帖子已發佈，管理員會盡快帖上代禱室，請留意通知。</p>
+                  <p className="text-gray-500 mt-2">貼上後，你可以於 <span className="font-semibold text-indigo-600">我的帖子</span> 管理及分享給你的代禱者。</p>
+                </div>
+                <div className="flex justify-center">
+                  <button
+                    type="button"
+                    onClick={() => setShowSuccessMessage(false)}
+                    className="px-6 py-3 bg-indigo-500 text-white font-semibold rounded-lg hover:bg-indigo-600 active:bg-indigo-700 transition-all duration-200 shadow-md"
+                  >
+                    關閉
+                  </button>
+                </div>
+              </div>
+            ) : (
             // Preview View
             <div className="space-y-6">
               <h3 className="text-xl font-bold text-gray-800 mb-4">確認您的代禱事項</h3>
@@ -340,6 +353,7 @@ function PrayerRequestModal({ prayers, setPrayers, onClose, currentUser }: Praye
                 </button>
               </div>
             </div>
+            )
           )}
         </div>
       </div>
